@@ -1,16 +1,28 @@
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
 import os
 
-def create_shorts(video_path, highlights):
-    os.makedirs("shorts_output", exist_ok=True)
-    results = []
-    for idx, seg in enumerate(highlights):
-        clip = VideoFileClip(video_path).subclip(seg["start"], seg["end"])
-        clip = clip.resize(height=1080)
-        txt = TextClip(seg["text"], fontsize=36, color="white", bg_color="black", size=(clip.w, None))
-        txt = txt.set_duration(clip.duration).set_position(("center", "bottom"))
-        comp = CompositeVideoClip([clip, txt])
-        out_path = f"shorts_output/short_{idx+1}.mp4"
-        comp.write_videofile(out_path, codec="libx264")
-        results.append(out_path)
-    return results
+def create_shorts(video_path, segments, output_dir="shorts_output"):
+    os.makedirs(output_dir, exist_ok=True)
+    short_count = 0
+
+    for i, segment in enumerate(segments):
+        start = segment["start"]
+        end = segment["end"]
+        text = segment["text"].strip()
+
+        # Skip segments that are too short or too long
+        if len(text) < 5 or (end - start) > 60:
+            continue
+
+        try:
+            clip = VideoFileClip(video_path).subclip(start, end)
+            caption = TextClip(text, fontsize=24, color="white", bg_color="black").set_duration(clip.duration)
+            final = CompositeVideoClip([clip, caption.set_position(("center", "bottom"))])
+
+            output_path = os.path.join(output_dir, f"short_{i+1}.mp4")
+            final.write_videofile(output_path, codec="libx264", audio_codec="aac", fps=24)
+            short_count += 1
+        except Exception as e:
+            print(f"⚠️ Skipped segment {i}: {e}")
+
+    print(f"\n✅ Created {short_count} shorts.")
