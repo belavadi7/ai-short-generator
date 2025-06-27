@@ -1,7 +1,16 @@
-from pytube import YouTube
+# video_downloader.py
 
-def download_video(url, save_path="downloaded_video.mp4"):
-    yt = YouTube(url)
-    stream = yt.streams.filter(progressive=True, file_extension='mp4').first()
-    stream.download(filename=save_path)
-    return save_path
+import yt_dlp
+import os
+
+def download_video(url, output_path="downloads"):
+    os.makedirs(output_path, exist_ok=True)
+    ydl_opts = {
+        'format': 'mp4',
+        'outtmpl': f'{output_path}/%(title)s.%(ext)s',
+        'quiet': True
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+        return os.path.join(output_path, f"{info['title']}.mp4")
